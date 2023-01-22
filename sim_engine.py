@@ -219,7 +219,7 @@ def update_summary():
 
 
                              
-       
+
 def sim_engine(r,hr,summary=None):
     race_dict = {}
     rev_race_dict = {}

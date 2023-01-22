@@ -72,8 +72,6 @@ fig = px.line(h,x = 'no_races', y = 'mean_speed_t',text = 'start_time',title = h
 fig.update_traces(textposition="bottom right")
 # fig.update_traces(mode='markers+lines')
 
-
-
 fig.show()
 
 
