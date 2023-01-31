@@ -14,8 +14,8 @@ import cProfile
 #------------------------------------------------
 # data import
 #------------------------------------------------
-races = pd.read_csv('./data_test/race_test.csv')
-horse_race_entries = pd.read_csv('./data_test/horse_in_race_test.csv')
+races = pd.read_csv('./data_full/race_db.csv')
+horse_race_entries = pd.read_csv('./data_full/horse_race_data_db.csv')
 # horses = pd.read_csv('./data/horse_test.csv')
 
 #------------------------------------------------
@@ -53,7 +53,7 @@ cdf_array = gen_cdf_array(race_class = classes,distance = dists, fee = fee)
 # r, hr = get_horse_in_races(r,horse_race_entries,start_time = '2022-02-27 18:47:00', end_time = '2022-02-27 18:53:00')
 
 mode = 'dump' # or 'update'
-results = './results_test/'
+results = './testing/'
 
 # potential parallet execution
 # my_rank = comm.Get_rank()
@@ -71,7 +71,8 @@ for cdf in range(len(cdf_names)):
  
 #   reading in done rank by rank for startup
     if mode == 'dump':
-        r, hr = get_horse_in_races(r,horse_race_entries)
+        r, hr = get_horse_in_races(r,horse_race_entries,'all_gates')
+        # ,start_time = '2022-12-21 23:22:55')
         #,start_time='2022-09-01 18:46:00',end_time='2022-12-25 18:47:00')
         summary = None
     elif mode == 'update':

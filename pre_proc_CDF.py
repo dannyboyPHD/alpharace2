@@ -2,15 +2,20 @@ import pandas as pd
 from itertools import product
 
 
-def get_horse_in_races(r,hr,start_time = 0, end_time =0):
+def get_horse_in_races(r,hr,no_gates,start_time = 0, end_time =0):
     
     if start_time != 0 and end_time != 0:
         r = r.loc[ (r['start_time']> start_time) & (r['start_time']<= end_time)]
         # strictly greater than means races at start_time excluded
         if 'num_horses' in r.columns:
-            r = r.loc[r['num_horses']==12]
+            # extract 12 gates races only
+            if no_gates == '12_gates':
+                r = r.loc[r['num_horses']==12]
+            elif no_gates == '6_gates':
+                r = r.loc[r['num_horses']==6]
+            elif no_gates == 'all':
+                pass
 
-        
         r_ids = r.index
         hr = hr[hr.index.isin(r_ids)]
         
@@ -19,23 +24,37 @@ def get_horse_in_races(r,hr,start_time = 0, end_time =0):
         # strictly greater than means races at start_time excluded
         
         if 'num_horses' in r.columns:
-            r = r.loc[r['num_horses']==12]
+            # extract 12 gates races only
+            if no_gates == '12_gates':
+                r = r.loc[r['num_horses']==12]
+            elif no_gates == '6_gates':
+                r = r.loc[r['num_horses']==6]
+            elif no_gates == 'all':
+                pass
 
         r_ids = r.index
         hr = hr[hr.index.isin(r_ids)]
     else:
+        
         if 'num_horses' in r.columns:
-            r = r.loc[r['num_horses']==12]
+            # extract 12 gates races only
+            if no_gates == '12_gates':
+                r = r.loc[r['num_horses']==12]
+            elif no_gates == '6_gates':
+                r = r.loc[r['num_horses']==6]
+            elif no_gates == 'all_gates':
+                pass
 
         r_ids = r.index.unique()
         hr = hr.loc[hr.index.isin(r_ids)]
     print(r)
 
-    if 'num_horses' in r.columns:
-        r = r.drop(columns = ['num_horses'])
+    # if 'num_horses' in r.columns:
+    #     r = r.drop(columns = ['num_horses'])
 
-    print('number of 12 place races: ', len(r))
-    print('correspindng races in hr: ', len(hr)/12)
+    print('number of races: ', len(r))
+    print('number race ids in hr: ', len(hr.index.unique()))
+    # print('correspindng races in hr: ', len(hr)/12)
 
     # old_rids = set(r_ids) - set(hr.index.unique())
 

@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 from calculations import*
 import time
-
+import json
 
 def race_id2integer(r,hr,summary=None):
     r_dict = {}
@@ -169,8 +169,8 @@ def create_summary(hr,r_dict,summary=None):
 
 
 
-def load_prerace_values(h_ids,hr_block,hr_off,sum_off, summary_work):
-    for i in range(12):
+def load_prerace_values(h_ids,hr_block,hr_off,sum_off, summary_work,n):
+    for i in range(n):
         hr_block[i,hr_off['horse_speed']] = 0 # unitialised, dealt with in ratio
         hr_block[i,hr_off['preELO']] = summary_work[h_ids[i],sum_off['currELO']]
         hr_block[i,hr_off['WR_t']] = summary_work[h_ids[i],sum_off['WR']]
@@ -200,8 +200,15 @@ def load_prerace_values(h_ids,hr_block,hr_off,sum_off, summary_work):
     return hr_block
 
 def gen_race_lookup(r):
-    r_tmp = r[['distance','fee','prize_pool_first','prize_pool_second',\
-        'prize_pool_third','start_time']]
+    # new format
+    if 'num_horses' in r.columns:
+        r_tmp = r[['distance','fee','prize_pool_first','prize_pool_second',\
+            'prize_pool_third','prize_pools','start_time','num_horses']]
+    # legacy format
+    else:
+        r_tmp = r[['distance','fee','prize_pool_first','prize_pool_second',\
+            'prize_pool_third','start_time']]
+        r_tmp.insert(6,'num_horses',12)
 
     off = [i for i in range(len(r_tmp.columns))]
     race_offsets = dict(zip(r_tmp.columns,off))
@@ -209,7 +216,6 @@ def gen_race_lookup(r):
     last_race = r_tmp['start_time'].max()
     
     r = r_tmp.to_numpy()
-
     return r, race_offsets,last_race
 
     
@@ -248,28 +254,55 @@ def sim_engine(r,hr,summary=None):
     n_races = len(race_lookup)
     print('number of races', n_races)
     start = time.time()
+    # indexing and slicing variables
+    a = 0 
+    b = 0
+
+    # prize pool mode
+    if 'prize_pools' in r.columns:
+        prize = 'modern'
+    else:
+        prize = 'legacy'
+
+
     for r in range(n_races):
-        h_ids = hr_work[12*r:12*r+12,hr_offsets['horse_id']]
+        #flexible 6 or 12 horse races
+        num_h = race_lookup[r,race_off['num_horses']]
+        a = b
+        b = a + num_h
+
+        h_ids = hr_work[a:b,hr_offsets['horse_id']]
 
         # load current stats from summary inot hr_work array
-        hr_work[12*r:12*r+12,:] = \
-            load_prerace_values(h_ids, hr_work[12*r:12*r+12,:],\
-                hr_offsets,summary_offsets,summary_work)
+        hr_work[a:b,:] = \
+            load_prerace_values(h_ids, hr_work[a:b,:],\
+                hr_offsets,summary_offsets,summary_work,num_h)
 
         # calc new elos
-        summary_work = calc_elos(h_ids,hr_work[12*r:12*r+12,:],\
-            hr_offsets,summary_offsets,summary_work,r)
+        summary_work = calc_elos(h_ids,hr_work[a:b,:],\
+            hr_offsets,summary_offsets,summary_work,r,num_h)
             # N += 1 inside calc_elos
             # affects order inwhich calc fcn can be called
 
         d = race_lookup[r,race_off['distance']]
 
-        summary_work,hr_work[12*r:12*r+12,:] =\
-            calc_horse_speed(h_ids,hr_work[12*r:12*r+12,:],\
-            hr_offsets,summary_offsets,summary_work,d)
+        summary_work,hr_work[a:b,:] =\
+            calc_horse_speed(h_ids,hr_work[a:b,:],\
+            hr_offsets,summary_offsets,summary_work,d,num_h)
 
-        summary_work = update_ratios(h_ids,hr_work[12*r:12*r+12,:],\
-            hr_offsets,summary_offsets,summary_work)
+        summary_work = update_ratios(h_ids,hr_work[a:b,:],\
+            hr_offsets,summary_offsets,summary_work,num_h)
+
+        if prize == 'modern':
+            p = race_lookup[r,race_off['prize_pools']]
+            p = json.loads(p)
+            fee = race_lookup[r,race_off['fee']]
+            # print(p['total'])
+            update_profitability(h_ids,hr_work[a:b,:]\
+            ,hr_offsets,summary_offsets,\
+            summary_work,fee,p,num_h)
+
+
 
     # timings and remapping
     end = time.time()
@@ -282,7 +315,6 @@ def sim_engine(r,hr,summary=None):
         archive = pd.DataFrame(hr_work,columns = hr_offsets.keys())
         archive['race_id'] = archive['race_id'].map(rev_race_dict)
         archive['horse_id'] = archive['horse_id'].map(rev_horse_dict)
-    
     else:
         print('no races in update')
         s = None

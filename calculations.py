@@ -3,18 +3,19 @@ import numpy as np
 import math
 
 
-def calc_elos(h_ids,hr_block,hr_off,sum_off,summary_work,r_id):
-    n =12
+def calc_elos(h_ids,hr_block,hr_off,sum_off,summary_work,r_id,n):
+
+    
     k = 32/(n-1)
 
-    for player in range(12):
+    for player in range(n):
         playerEloChange = 0
 
         currPlace = int(hr_block[player,hr_off['place']])
 
         currElo = summary_work[h_ids[player],sum_off['currELO']]
         
-        for opponent in range(12):
+        for opponent in range(n):
             if player == opponent:
                 continue
 
@@ -42,9 +43,9 @@ def calc_elos(h_ids,hr_block,hr_off,sum_off,summary_work,r_id):
     return summary_work
     
 
-def calc_horse_speed(h_ids,hr_block,hr_off,sum_off,summary_work,distance): 
-
-    for player in range(12):
+def calc_horse_speed(h_ids,hr_block,hr_off,sum_off,summary_work,distance,n): 
+    
+    for player in range(n):
         time = hr_block[player,hr_off['horse_time']] 
         curr_speed = (distance/time)*3.6 # KPH
 
@@ -63,8 +64,8 @@ def calc_horse_speed(h_ids,hr_block,hr_off,sum_off,summary_work,distance):
     return summary_work, hr_block                        
     
 
-def update_ratios(h_ids,hr_block,hr_off,sum_off,summary_work):
-    for player in range(12):
+def update_ratios(h_ids,hr_block,hr_off,sum_off,summary_work,n):
+    for player in range(n):
         place = int(hr_block[player,hr_off['place']])
         N = summary_work[h_ids[player],sum_off['N']]
         
@@ -124,5 +125,33 @@ def update_ratios(h_ids,hr_block,hr_off,sum_off,summary_work):
     
 
 
-def update_profitability():
-    pass
+def update_profitability(h_ids,hr_block,hr_off,sum_off,summary_work,f,p,n):
+    places = ['first','second','third','fourth','fifth','sixth'\
+        ,'seventh','eighth','ninth','tenth','eleventh','twelfth']
+    # print(places)
+    for player in range(n):
+        summary_work[h_ids[player],sum_off['costs']] += f
+
+        place = int(hr_block[player,hr_off['place']])
+        # print(place)
+        # print(places[place-1])
+
+        summary_work[h_ids[player],sum_off['revenue']] += p[places[place-1]]
+
+        rev = summary_work[h_ids[player],sum_off['revenue']]
+        costs = summary_work[h_ids[player],sum_off['costs']]
+        summary_work[h_ids[player],sum_off['profit']] = rev - costs
+        if costs == 0:
+            summary_work[h_ids[player],sum_off['roi']] = 0
+        else:
+            summary_work[h_ids[player],sum_off['roi']] = (rev - costs)/costs
+
+    return summary_work
+
+
+
+        
+
+
+
+

@@ -1,1 +1,7 @@
 data_test/
+data_full/
+results/
+results_archive/
+results_test/
+__pycache__/
+testing/
